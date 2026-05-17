@@ -28,6 +28,7 @@ wheels/
 report.md
 audit_report_*.md
 ISSUE_FOR_UPSTREAM.md
+debug.md
 tested/
 
 # Environments

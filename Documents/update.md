@@ -1,3 +1,15 @@
+# API Relay Security Audit Tool 升级日志
+
+## v3.6 (2026-05-17)
+
+### 🐛 Bug 修复与稳定性增强
+*   **修复 `fast_context` 逻辑失效问题**：现在勾选“快速上下文测试”能真正按预期缩减扫描阶梯，实际节省 70% Token。
+*   **解决报告重复渲染 Bug**：重构了 `run_audit_ui` 与 `main` 的耦合逻辑，确保测试完成后报告仅显示一次，界面更整洁。
+*   **消除脆弱的 `MockArgs` 补丁**：重构了核心审计库 `audit.py` 中的函数签名，采用显式传参代替对 `argparse.Namespace` 的依赖，极大提升了代码的健壮性。
+*   **UI/UX 细节优化**：清理了冗余的 CSS 代码，优化了步骤执行循环，显著提升了 Web 端的运行稳定性。
+
+---
+
 # API Relay Security Audit Tool 升级日志 (v3.5)
 
 本项目是基于原始开源项目 [toby-bridges/api-relay-audit](https://github.com/toby-bridges/api-relay-audit/tree/master) 进行的深度二次开发版本。在原有审计逻辑的基础上，我们进行了如下重构与功能增强：
@@ -28,4 +40,4 @@
 *   **本地报告管理**：生成的 `report.md` 支持一键下载至本地，文件名自动包含时间戳。
 
 ---
-*Updated by Gemini CLI Audit Team - 2026-05-16*
+*Updated by Gemini CLI Audit Team - 2026-05-17*

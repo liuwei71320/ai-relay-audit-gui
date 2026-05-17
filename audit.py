@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-API Relay Security Audit Tool v2.3 --- Standalone Edition
+API Relay Security Audit Tool v2.4 --- Standalone Edition
 
 A COMPLETE, SELF-CONTAINED audit script with ZERO external dependencies.
 Uses only Python stdlib + curl subprocess calls for all HTTP communication.
@@ -2826,7 +2826,7 @@ def test_tool_substitution(client, report):
     return detected, inconclusive
 
 
-def test_error_leakage(client, args, report):
+def test_error_leakage(client, report, key, aggressive=False):
     """Step 9: Error Response Header Leakage (AC-2 adjacent).
 
     Fire deterministic broken requests at the relay, capture the full
@@ -2848,12 +2848,12 @@ def test_error_leakage(client, args, report):
         "figure 3 (AC-2 credential abuse at 4.25% of free routers, 2x more "
         "common than AC-1 code injection).\n"
     )
-    if args.aggressive_error_probes:
+    if aggressive:
         report.p("_Aggressive probes enabled: includes 256 KB oversized-context request._\n")
 
     results, severity, inconclusive = run_error_leakage_test(
-        client, args.key, client.base_url,
-        aggressive=args.aggressive_error_probes,
+        client, key, client.base_url,
+        aggressive=aggressive,
     )
 
     report.p("| Trigger | HTTP Status | Severity | Leaks |")
@@ -3435,7 +3435,7 @@ def main():
         print("[9/14] Error response leakage test...")
         err_severity, err_inconclusive = _run_step(
             "Step 9 error leakage", report,
-            test_error_leakage, client, args, report,
+            test_error_leakage, client, report, args.key, args.aggressive_error_probes,
             default=("none", True), crashes=step_crashes,
         )
     else:

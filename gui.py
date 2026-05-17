@@ -50,7 +50,7 @@ def run_audit_ui(base_url, api_key, model, profile, skip_options):
         ("越狱测试", "jailbreak", audit.test_jailbreak, (client, report)),
         ("上下文长度测试", "context", audit.test_context_length, (client, report)),
         ("工具调用劫持测试 (AC-1.a)", "tool", audit.test_tool_substitution, (client, report)),
-        ("错误响应泄露测试 (AC-2)", "error", audit.test_error_leakage, (client, None, report)), # 注意：args 参数在这里传 None，或者模拟一个对象
+        ("错误响应泄露测试 (AC-2)", "error", audit.test_error_leakage, (client, report, api_key)),
         ("流式完整性测试 (AC-1 SSE)", "stream", audit.test_stream_integrity, (client, report)),
     ]
     
@@ -83,13 +83,6 @@ def run_audit_ui(base_url, api_key, model, profile, skip_options):
         "intel_fail_rate": 0,
     }
 
-    # 处理 Step 9 的特殊 args 参数
-    class MockArgs:
-        def __init__(self, key):
-            self.key = key
-            self.aggressive_error_probes = False
-    mock_args = MockArgs(api_key)
-
     total_steps = len(steps)
     for i, (name, key, func, args_params) in enumerate(steps):
         if skip_options.get(key, False):
@@ -100,9 +93,11 @@ def run_audit_ui(base_url, api_key, model, profile, skip_options):
         status_text.text(f"正在执行: {name}...")
         
         try:
-            # 特殊处理 Step 9，它需要 args 对象
-            if key == "error":
-                res = func(client, mock_args, report)
+            # 特殊处理不同步骤的参数
+            if key == "context":
+                res = func(client, report, fast_mode=skip_options.get("fast_context", False))
+            elif key == "error":
+                res = func(client, report, api_key, aggressive=False)
                 results_context["err_severity"], results_context["err_inconclusive"] = res
             else:
                 res = func(*args_params)
@@ -123,10 +118,9 @@ def run_audit_ui(base_url, api_key, model, profile, skip_options):
 
     status_text.text("✅ 审计完成！")
     
-    # 渲染最终评分
+    # 渲染风险评估
     st.subheader("📊 风险评估报告")
     
-    # 简单的风险计算逻辑 (镜像 audit.py 中的逻辑)
     d1 = results_context["injection"] is not None and results_context["injection"] > 100
     d2 = results_context["overridden"] is not None and results_context["overridden"]
     d3 = results_context["substitution_detected"]
@@ -147,10 +141,8 @@ def run_audit_ui(base_url, api_key, model, profile, skip_options):
     else:
         st.success("🟢 低风险 (LOW RISK): 未发现明显的安全风险。")
 
-    # 显示报告全文
+    # 返回报告全文，不再此处渲染 Markdown
     full_report = report.render(target_url=base_url, model=model)
-    st.markdown(full_report)
-    
     return full_report
 
 def main():
@@ -213,9 +205,7 @@ def main():
             file_name=f"audit_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
             mime="text/markdown"
         )
-        # 注意：run_audit_ui 内部已经渲染过一次报告了，
-        # 但在 rerun 后，那些动态创建的组件会消失。
-        # 所以我们需要在这里再次显示报告全文。
+        # 统一在此处渲染报告全文，避免重复渲染
         st.markdown(st.session_state.report_content)
 
 if __name__ == "__main__":
